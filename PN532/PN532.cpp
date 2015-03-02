@@ -269,6 +269,17 @@ bool PN532::setPassiveActivationRetries(uint8_t maxRetries)
     return (0 < HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer)));
 }
 
+bool PN532::rfConfiguration(uint8_t item, uint8_t dataLen, const uint8_t* data)
+{
+    pn532_packetbuffer[0] = PN532_COMMAND_RFCONFIGURATION;
+    pn532_packetbuffer[1] = item;
+
+    if (HAL(writeCommand)(pn532_packetbuffer, 2, data, dataLen))
+        return 0x0;  // no ACK
+
+    return (0 < HAL(readResponse)(pn532_packetbuffer, 0));
+}
+
 /***** ISO14443A Commands ******/
 
 /**************************************************************************/
@@ -737,19 +748,19 @@ bool PN532::inDataExchange(uint8_t *send, uint8_t sendLength, uint8_t *response,
             peer acting as card/responder.
 */
 /**************************************************************************/
-bool PN532::inListPassiveTarget()
+bool PN532::inListPassiveTarget(uint8_t cardbaudrate, uint8_t initiatorDataLen, uint8_t* initiatorData)
 {
     pn532_packetbuffer[0] = PN532_COMMAND_INLISTPASSIVETARGET;
     pn532_packetbuffer[1] = 1;
-    pn532_packetbuffer[2] = 0;
+    pn532_packetbuffer[2] = cardbaudrate;
 
     DMSG("inList passive target\n");
 
-    if (HAL(writeCommand)(pn532_packetbuffer, 3)) {
+    if (HAL(writeCommand)(pn532_packetbuffer, 3, initiatorData, initiatorDataLen)) {
         return false;
     }
 
-    int16_t status = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), 30000);
+    int16_t status = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), 1000);
     if (status < 0) {
         return false;
     }
@@ -760,6 +771,88 @@ bool PN532::inListPassiveTarget()
 
     inListedTag = pn532_packetbuffer[1];
 
+    return true;
+}
+
+/**************************************************************************/
+/*!
+    @brief  Basic data exchanges between the PN532 and a target.
+
+    @param  send            Pointer to data to send
+    @param  sendLength      Length of the data to send
+    @param  response        Pointer to response data
+    @param  responseLength  Pointer to the response data length
+*/
+/**************************************************************************/
+bool PN532::inCommunicateThru(const uint8_t *send, uint8_t sendLength, uint8_t *response, uint8_t *responseLength)
+{
+    uint8_t i;
+
+    pn532_packetbuffer[0] = PN532_COMMAND_INCOMMUNICATETHRU;
+
+    if (HAL(writeCommand)(pn532_packetbuffer, 1, send, sendLength)) {
+        return false;
+    }
+
+    int16_t status = HAL(readResponse)(response, *responseLength, 1000);
+    if (status < 0) {
+        return false;
+    }
+
+    if ((response[0] & 0x3f) != 0) {
+        DMSG("Status code indicates an error\n");
+        return false;
+    }
+
+    uint8_t length = status;
+    length -= 1;
+
+    if (length > *responseLength) {
+        length = *responseLength; // silent truncation...
+    }
+
+    for (uint8_t i = 0; i < length; i++) {
+        response[i] = response[i + 1];
+    }
+    *responseLength = length;
+
+    return true;
+}
+
+bool PN532::writeRegister(uint8_t number, const uint16_t *addrs, const uint8_t *values){
+    uint8_t j = 1;
+    pn532_packetbuffer[0] = PN532_COMMAND_WRITEREGISTER;
+    for (uint8_t i = 0; i < number; ++i)
+    {
+        pn532_packetbuffer[j++] = addrs[i] >> 8;
+        pn532_packetbuffer[j++] = addrs[i] & 0xff;
+        pn532_packetbuffer[j++] = values[i];
+    }
+    if (HAL(writeCommand)(pn532_packetbuffer, j)) {
+        return false;
+    }
+    int16_t status = HAL(readResponse)(pn532_packetbuffer, 0, 100);
+    if (status < 0) {
+        return false;
+    }
+    return true;
+}
+
+bool PN532::readRegister(uint8_t number, const uint16_t *addrs, uint8_t *values){
+    uint8_t j = 1;
+    pn532_packetbuffer[0] = PN532_COMMAND_READREGISTER;
+    for (uint8_t i = 0; i < number; ++i)
+    {
+        pn532_packetbuffer[j++] = addrs[i] >> 8;
+        pn532_packetbuffer[j++] = addrs[i] & 0xff;
+    }
+    if (HAL(writeCommand)(pn532_packetbuffer, j)) {
+        return false;
+    }
+    int16_t status = HAL(readResponse)(values, number, 100);
+    if (status < 0) {
+        return false;
+    }
     return true;
 }
 
