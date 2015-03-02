@@ -110,6 +110,73 @@
 #define PN532_GPIO_P34                      (4)
 #define PN532_GPIO_P35                      (5)
 
+/**************** from pn53x-internal.h **********/
+// Register addresses
+#define PN53X_REG_Control_switch_rng 0x6106
+#define PN53X_REG_CIU_Mode 0x6301
+#define PN53X_REG_CIU_TxMode 0x6302
+#define PN53X_REG_CIU_RxMode 0x6303
+#define PN53X_REG_CIU_TxControl 0x6304
+#define PN53X_REG_CIU_TxAuto 0x6305
+#define PN53X_REG_CIU_TxSel 0x6306
+#define PN53X_REG_CIU_RxSel 0x6307
+#define PN53X_REG_CIU_RxThreshold 0x6308
+#define PN53X_REG_CIU_Demod 0x6309
+#define PN53X_REG_CIU_FelNFC1 0x630A
+#define PN53X_REG_CIU_FelNFC2 0x630B
+#define PN53X_REG_CIU_MifNFC 0x630C
+#define PN53X_REG_CIU_ManualRCV 0x630D
+#define PN53X_REG_CIU_TypeB 0x630E
+// #define PN53X_REG_- 0x630F
+// #define PN53X_REG_- 0x6310
+#define PN53X_REG_CIU_CRCResultMSB 0x6311
+#define PN53X_REG_CIU_CRCResultLSB 0x6312
+#define PN53X_REG_CIU_GsNOFF 0x6313
+#define PN53X_REG_CIU_ModWidth 0x6314
+#define PN53X_REG_CIU_TxBitPhase 0x6315
+#define PN53X_REG_CIU_RFCfg 0x6316
+#define PN53X_REG_CIU_GsNOn 0x6317
+#define PN53X_REG_CIU_CWGsP 0x6318
+#define PN53X_REG_CIU_ModGsP 0x6319
+#define PN53X_REG_CIU_TMode 0x631A
+#define PN53X_REG_CIU_TPrescaler 0x631B
+#define PN53X_REG_CIU_TReloadVal_hi 0x631C
+#define PN53X_REG_CIU_TReloadVal_lo 0x631D
+#define PN53X_REG_CIU_TCounterVal_hi 0x631E
+#define PN53X_REG_CIU_TCounterVal_lo 0x631F
+// #define PN53X_REG_- 0x6320
+#define PN53X_REG_CIU_TestSel1 0x6321
+#define PN53X_REG_CIU_TestSel2 0x6322
+#define PN53X_REG_CIU_TestPinEn 0x6323
+#define PN53X_REG_CIU_TestPinValue 0x6324
+#define PN53X_REG_CIU_TestBus 0x6325
+#define PN53X_REG_CIU_AutoTest 0x6326
+#define PN53X_REG_CIU_Version 0x6327
+#define PN53X_REG_CIU_AnalogTest 0x6328
+#define PN53X_REG_CIU_TestDAC1 0x6329
+#define PN53X_REG_CIU_TestDAC2 0x632A
+#define PN53X_REG_CIU_TestADC 0x632B
+// #define PN53X_REG_- 0x632C
+// #define PN53X_REG_- 0x632D
+// #define PN53X_REG_- 0x632E
+#define PN53X_REG_CIU_RFlevelDet 0x632F
+#define PN53X_REG_CIU_SIC_CLK_en 0x6330
+#define PN53X_REG_CIU_Command 0x6331
+#define PN53X_REG_CIU_CommIEn 0x6332
+#define PN53X_REG_CIU_DivIEn 0x6333
+#define PN53X_REG_CIU_CommIrq 0x6334
+#define PN53X_REG_CIU_DivIrq 0x6335
+#define PN53X_REG_CIU_Error 0x6336
+#define PN53X_REG_CIU_Status1 0x6337
+#define PN53X_REG_CIU_Status2 0x6338
+#define PN53X_REG_CIU_FIFOData 0x6339
+#define PN53X_REG_CIU_FIFOLevel 0x633A
+#define PN53X_REG_CIU_WaterLevel 0x633B
+#define PN53X_REG_CIU_Control 0x633C
+#define PN53X_REG_CIU_BitFraming 0x633D
+#define PN53X_REG_CIU_Coll 0x633E
+/**************** end pn53x-internal.h **********/
+
 class PN532
 {
 public:
@@ -144,6 +211,7 @@ public:
     bool readRegister(uint8_t number, const uint16_t *addrs, uint8_t *values);
     bool rfConfiguration(uint8_t item, uint8_t dataLen, const uint8_t* data);
 
+    bool readTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11]);
 
     // ISO14443A functions
     bool readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uidLength, uint16_t timeout = 1000, bool inlist = false);
@@ -172,6 +240,7 @@ public:
     };
 
 private:
+    enum{CRC_A=1, CRC_B=2};
     uint8_t _uid[7];  // ISO14443A uid
     uint8_t _uidLen;  // uid len
     uint8_t _key[6];  // Mifare Classic key
@@ -179,7 +248,17 @@ private:
 
     uint8_t pn532_packetbuffer[64];
 
+    const static uint16_t registerAddrForTypeB[12];
+    const static uint8_t registerValueForTypeB[12];
+    uint8_t registerValueBackup[12];
+
     PN532Interface *_interface;
+
+    unsigned short UpdateCrc(unsigned char ch, unsigned short *lpwCrc);
+    void ComputeCrc(uint8_t CRCType, uint8_t *Data, uint8_t Length, uint8_t *TransmitFirst, uint8_t *TransmitSecond);
+    void setPN532RegsForTypeB();
+    void restorePN532RegsForTypeB();
+    bool doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11]);
 };
 
 #endif
