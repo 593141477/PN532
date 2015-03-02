@@ -748,7 +748,7 @@ bool PN532::inDataExchange(uint8_t *send, uint8_t sendLength, uint8_t *response,
             peer acting as card/responder.
 */
 /**************************************************************************/
-bool PN532::inListPassiveTarget(uint8_t cardbaudrate, uint8_t initiatorDataLen, uint8_t* initiatorData)
+bool PN532::inListPassiveTarget(uint8_t cardbaudrate, uint8_t initiatorDataLen, uint8_t* initiatorData, uint16_t timeout)
 {
     pn532_packetbuffer[0] = PN532_COMMAND_INLISTPASSIVETARGET;
     pn532_packetbuffer[1] = 1;
@@ -760,7 +760,7 @@ bool PN532::inListPassiveTarget(uint8_t cardbaudrate, uint8_t initiatorDataLen, 
         return false;
     }
 
-    int16_t status = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), 1000);
+    int16_t status = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), timeout);
     if (status < 0) {
         return false;
     }

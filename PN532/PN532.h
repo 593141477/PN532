@@ -205,7 +205,7 @@ public:
     bool tgSetData(const uint8_t *header, uint8_t hlen, const uint8_t *body = 0, uint8_t blen = 0);
 
     int16_t inRelease(const uint8_t relevantTarget = 0);
-    bool inListPassiveTarget(uint8_t cardbaudrate = PN532_MIFARE_ISO14443A, uint8_t initiatorDataLen = 0, uint8_t* initiatorData = 0);
+    bool inListPassiveTarget(uint8_t cardbaudrate = PN532_MIFARE_ISO14443A, uint8_t initiatorDataLen = 0, uint8_t* initiatorData = 0, uint16_t timeout = 1000);
     bool inCommunicateThru(const uint8_t *send, uint8_t sendLength, uint8_t *response, uint8_t *responseLength);
     bool writeRegister(uint8_t number, const uint16_t *addrs, const uint8_t *values);
     bool readRegister(uint8_t number, const uint16_t *addrs, uint8_t *values);
