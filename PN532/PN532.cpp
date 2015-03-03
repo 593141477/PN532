@@ -1027,6 +1027,12 @@ bool PN532::doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char stud
         return false;
     DMSG("CMD-2 returned"); DMSG_INT(sz); DMSG(" bytes\n");
 
+    static uint8_t cmd_3[] = {0x0a, 0x00, 0x00, 0xb0, 0x95, 0x00, 0x1e, 0x80, 0x4d};
+    sz = sizeof(pn532_packetbuffer);
+    if(!inCommunicateThru(cmd_3, sizeof(cmd_3), pn532_packetbuffer, &sz))
+        return false;
+    DMSG("CMD-3 returned"); DMSG_INT(sz); DMSG(" bytes\n");
+
     static uint8_t cmd_sid[] = {0x0b, 0x00, 0x00, 0xb0, 0x96, 0x1c, 0x0a, 0xa5, 0x57};
     sz = sizeof(pn532_packetbuffer);
     if(!inCommunicateThru(cmd_sid, sizeof(cmd_sid), pn532_packetbuffer, &sz))
