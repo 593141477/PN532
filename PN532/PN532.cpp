@@ -971,17 +971,26 @@ int16_t PN532::inRelease(const uint8_t relevantTarget){
     return HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer));
 }
 
-bool PN532::readTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11])
+void PN532::configFor14443B()
 {
-    bool result;
     uint8_t param[] = {1};
     rfConfiguration(1, 1, param); //RF On
     delay(50);
     setPN532RegsForTypeB();
-    result = doReadTsighuaStuCard(cardId, expire, studentId);
+}
+
+void PN532::resetConfigFor14443B()
+{
+    uint8_t param[] = {0};
     restorePN532RegsForTypeB();
-    param[0] = 0;
     rfConfiguration(1, 1, param); //RF Off
+}
+
+bool PN532::readTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11])
+{
+    bool result;
+    configFor14443B();
+    result = doReadTsighuaStuCard(cardId, expire, studentId);
     return result;
 }
 bool PN532::doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11])
@@ -1044,6 +1053,16 @@ bool PN532::doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char stud
     }
     studentId[10] = '\0';
 
+    return true;
+}
+bool PN532::stuCardIsPresent()
+{
+    uint8_t sz;
+    static uint8_t cmd_3[] = {0x0a, 0x00, 0x00, 0xb0, 0x95, 0x00, 0x1e, 0x80, 0x4d};
+    sz = sizeof(pn532_packetbuffer);
+    if(!inCommunicateThru(cmd_3, sizeof(cmd_3), pn532_packetbuffer, &sz))
+        return false;
+    DMSG("CMD-3 returned"); DMSG_INT(sz); DMSG(" bytes\n");
     return true;
 }
 

@@ -211,7 +211,10 @@ public:
     bool readRegister(uint8_t number, const uint16_t *addrs, uint8_t *values);
     bool rfConfiguration(uint8_t item, uint8_t dataLen, const uint8_t* data);
 
+    void configFor14443B();
     bool readTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11]);
+    bool stuCardIsPresent();
+    void resetConfigFor14443B();
 
     // ISO14443A functions
     bool readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uidLength, uint16_t timeout = 1000, bool inlist = false);
