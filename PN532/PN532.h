@@ -110,6 +110,9 @@
 #define PN532_GPIO_P34                      (4)
 #define PN532_GPIO_P35                      (5)
 
+#define PN532_GPIO_P71                      (1)
+#define PN532_GPIO_P72                      (2)
+
 /**************** from pn53x-internal.h **********/
 // Register addresses
 #define PN53X_REG_Control_switch_rng 0x6106
@@ -188,6 +191,7 @@ public:
     bool SAMConfig(void);
     uint32_t getFirmwareVersion(void);
     bool writeGPIO(uint8_t pinstate);
+    bool writeGPIOP7(uint8_t pinstate);
     uint8_t readGPIO(void);
     bool setPassiveActivationRetries(uint8_t maxRetries);
 

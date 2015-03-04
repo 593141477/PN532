@@ -183,6 +183,26 @@ bool PN532::writeGPIO(uint8_t pinstate)
     return (0 < HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer)));
 }
 
+bool PN532::writeGPIOP7(uint8_t pinstate)
+{
+    pinstate &= (1 << PN532_GPIO_P71) | (1 << PN532_GPIO_P72);
+
+    // Fill command buffer
+    pn532_packetbuffer[0] = PN532_COMMAND_WRITEGPIO;
+    pn532_packetbuffer[1] = 0x00;  // P3 Pins are not changed
+    pn532_packetbuffer[2] = PN532_GPIO_VALIDATIONBIT | pinstate;  // P7 Pins
+
+    DMSG("Writing P7 GPIO: ");
+    DMSG_HEX(pn532_packetbuffer[1]);
+    DMSG("\n");
+
+    // Send the WRITEGPIO command (0x0E)
+    if (HAL(writeCommand)(pn532_packetbuffer, 3))
+        return 0;
+
+    return (0 < HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer)));
+}
+
 /**************************************************************************/
 /*!
     Reads the state of the PN532's GPIO pins
