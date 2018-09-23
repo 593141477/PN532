@@ -216,7 +216,7 @@ public:
     bool rfConfiguration(uint8_t item, uint8_t dataLen, const uint8_t* data);
 
     void configFor14443B();
-    bool readTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11]);
+    bool readTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11], char *genderByte = nullptr, char *name21 = nullptr);
     bool stuCardIsPresent();
     void resetConfigFor14443B();
 
@@ -265,7 +265,7 @@ private:
     void ComputeCrc(uint8_t CRCType, uint8_t *Data, uint8_t Length, uint8_t *TransmitFirst, uint8_t *TransmitSecond);
     void setPN532RegsForTypeB();
     void restorePN532RegsForTypeB();
-    bool doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11]);
+    bool doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11], char *genderByte, char *name21);
 };
 
 #endif

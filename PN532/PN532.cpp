@@ -1006,14 +1006,14 @@ void PN532::resetConfigFor14443B()
     rfConfiguration(1, 1, param); //RF Off
 }
 
-bool PN532::readTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11])
+bool PN532::readTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11], char *genderByte, char *name21)
 {
     bool result;
     configFor14443B();
-    result = doReadTsighuaStuCard(cardId, expire, studentId);
+    result = doReadTsighuaStuCard(cardId, expire, studentId, genderByte, name21);
     return result;
 }
-bool PN532::doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11])
+bool PN532::doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char studentId[11], char *genderByte, char *name21)
 {
     uint8_t sz;
 
@@ -1041,6 +1041,8 @@ bool PN532::doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char stud
     if(!inCommunicateThru(cmd_cid, sizeof(cmd_cid), pn532_packetbuffer, &sz))
         return false;
     DMSG("CMD-CID returned"); DMSG_INT(sz); DMSG(" bytes\n");
+    if(pn532_packetbuffer[sz-4] != 0x90 || pn532_packetbuffer[sz-3] != 0x00)
+        return false;
     for (int i = 0; i < 3; ++i)
     {
         cardId[i] = pn532_packetbuffer[9+i];
@@ -1055,24 +1057,49 @@ bool PN532::doReadTsighuaStuCard(uint8_t cardId[3], uint8_t expire[3], char stud
     if(!inCommunicateThru(cmd_2, sizeof(cmd_2), pn532_packetbuffer, &sz))
         return false;
     DMSG("CMD-2 returned"); DMSG_INT(sz); DMSG(" bytes\n");
+    if(pn532_packetbuffer[sz-4] != 0x90 || pn532_packetbuffer[sz-3] != 0x00)
+        return false;
 
     static uint8_t cmd_3[] = {0x0a, 0x00, 0x00, 0xb0, 0x95, 0x00, 0x1e, 0x80, 0x4d};
     sz = sizeof(pn532_packetbuffer);
     if(!inCommunicateThru(cmd_3, sizeof(cmd_3), pn532_packetbuffer, &sz))
         return false;
     DMSG("CMD-3 returned"); DMSG_INT(sz); DMSG(" bytes\n");
+    if(pn532_packetbuffer[sz-4] != 0x90 || pn532_packetbuffer[sz-3] != 0x00)
+        return false;
 
-    static uint8_t cmd_sid[] = {0x0b, 0x00, 0x00, 0xb0, 0x96, 0x1c, 0x0a, 0xa5, 0x57};
+    static uint8_t cmd_sid[] = {0x0b, 0x00, 0x00, 0xb0, 0x96, 0x1c, 0x1f, 0x00, 0x00};
+    ComputeCrc(CRC_B, cmd_sid, sizeof(cmd_sid)-2, cmd_sid+7, cmd_sid+8);
     sz = sizeof(pn532_packetbuffer);
     if(!inCommunicateThru(cmd_sid, sizeof(cmd_sid), pn532_packetbuffer, &sz))
         return false;
     DMSG("CMD-SID returned"); DMSG_INT(sz); DMSG(" bytes\n");
+    if(pn532_packetbuffer[sz-4] != 0x90 || pn532_packetbuffer[sz-3] != 0x00)
+        return false;
     for (int i = 0; i < 10; ++i)
     {
         studentId[i] = pn532_packetbuffer[2+i];
     }
     studentId[10] = '\0';
 
+    if(genderByte)
+        *genderByte = pn532_packetbuffer[2+27];
+
+    if(name21){
+        static uint8_t cmd_name[] = {0x0b, 0x00, 0x00, 0xb0, 0x96, 0x00, 0x14, 0x00, 0x00};
+        ComputeCrc(CRC_B, cmd_name, sizeof(cmd_name)-2, cmd_name+7, cmd_name+8);
+        sz = sizeof(pn532_packetbuffer);
+        if(!inCommunicateThru(cmd_name, sizeof(cmd_name), pn532_packetbuffer, &sz))
+            return false;
+        DMSG("CMD-NAME returned"); DMSG_INT(sz); DMSG(" bytes\n");
+        if(pn532_packetbuffer[sz-4] != 0x90 || pn532_packetbuffer[sz-3] != 0x00)
+            return false;
+        for (int i = 0; i < 20; ++i)
+        {
+            name21[i] = pn532_packetbuffer[2+i];
+        }
+        name21[20] = '\0';
+    }
     return true;
 }
 bool PN532::stuCardIsPresent()
